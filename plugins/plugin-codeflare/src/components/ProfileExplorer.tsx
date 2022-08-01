@@ -19,11 +19,23 @@ import prettyMillis from "pretty-ms"
 import { EventEmitter } from "events"
 import { Profiles } from "madwizard"
 import { Loading } from "@kui-shell/plugin-client-common"
-import { Grid, GridItem, Tile } from "@patternfly/react-core"
+import {
+  Grid,
+  GridItem,
+  Card,
+  CardTitle,
+  CardBody,
+  CardFooter,
+  Divider,
+  Title,
+  Button,
+  Flex,
+  FlexItem,
+} from "@patternfly/react-core"
 
 import ProfileWatcher from "../tray/watchers/profile/list"
 
-import PlusIcon from "@patternfly/react-icons/dist/esm/icons/user-plus-icon"
+import { OutlinedClockIcon, UserPlusIcon, PlayIcon, PowerOffIcon } from "@patternfly/react-icons"
 // import ProfileIcon from "@patternfly/react-icons/dist/esm/icons/user-icon"
 
 const events = new EventEmitter()
@@ -143,23 +155,58 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
         <Grid className="codeflare--gallery-grid flex-fill sans-serif top-pad left-pad right-pad bottom-pad" hasGutter>
           {this.state.profiles.map((_) => (
             <GridItem key={_.name}>
-              <Tile
-                className="codeflare--tile"
-                data-profile={_.name}
-                title={_.name}
-                isSelected={this.state.selectedProfile === _.name}
-                onClick={this.onSelect}
-              >
-                {`Last used ${this.prettyMillis(Date.now() - _.lastUsedTime)}`}
-              </Tile>
+              <Card isSelectableRaised>
+                <CardTitle>
+                  <Title headingLevel="h2" size="lg">
+                    {_.name}
+                  </Title>
+                </CardTitle>
+                <CardBody>
+                  <Flex flexWrap={{ default: "nowrap" }}>
+                    <FlexItem>
+                      <OutlinedClockIcon aria-hidden="true" />
+                    </FlexItem>
+                    <FlexItem>
+                      <span>{`Last used ${this.prettyMillis(Date.now() - _.lastUsedTime)}`}</span>
+                    </FlexItem>
+                  </Flex>
+                </CardBody>
+                <Divider />
+                <CardFooter>
+                  <Flex flexWrap={{ default: "nowrap" }}>
+                    <FlexItem>
+                      <Button variant="link">
+                        <PlayIcon aria-hidden="true" />
+                      </Button>
+                    </FlexItem>
+                    <FlexItem>
+                      <Button variant="link">
+                        <PowerOffIcon aria-hidden="true" />
+                      </Button>
+                    </FlexItem>
+                  </Flex>
+                </CardFooter>
+              </Card>
             </GridItem>
           ))}
 
           {
             <GridItem>
-              <Tile className="codeflare--tile codeflare--tile-new" title="New Profile" icon={<PlusIcon />} isDisabled>
-                Customize a profile
-              </Tile>
+              <Card isSelectableRaised isDisabledRaised>
+                <CardTitle>
+                  <Title headingLevel="h2" size="lg">
+                    <Flex flexWrap={{ default: "nowrap" }}>
+                      <FlexItem>
+                        <UserPlusIcon aria-hidden="true" />
+                      </FlexItem>
+                      <FlexItem>
+                        <span>New Profile</span>
+                      </FlexItem>
+                    </Flex>
+                  </Title>
+                </CardTitle>
+                <CardBody>Customize a profile</CardBody>
+              </Card>
             </GridItem>
           }
         </Grid>
