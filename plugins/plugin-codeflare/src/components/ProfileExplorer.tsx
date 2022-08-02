@@ -20,23 +20,22 @@ import { EventEmitter } from "events"
 import { Profiles } from "madwizard"
 import { Loading } from "@kui-shell/plugin-client-common"
 import {
-  Grid,
-  GridItem,
   Card,
   CardTitle,
   CardBody,
-  CardFooter,
-  Divider,
   Title,
   Button,
   Flex,
   FlexItem,
+  Select,
+  SelectOption,
+  SelectVariant,
+  SelectOptionObject,
 } from "@patternfly/react-core"
 
 import ProfileWatcher from "../tray/watchers/profile/list"
 
-import { OutlinedClockIcon, UserPlusIcon, PlayIcon, PowerOffIcon } from "@patternfly/react-icons"
-// import ProfileIcon from "@patternfly/react-icons/dist/esm/icons/user-icon"
+import { UserIcon, PendingIcon, PlayIcon, PowerOffIcon } from "@patternfly/react-icons"
 
 const events = new EventEmitter()
 
@@ -59,12 +58,16 @@ type State = {
   selectedProfile?: string
   profiles?: Profiles.Profile[]
   catastrophicError?: unknown
+  selectIsOpen: boolean
+  selectDefaultOption?: string | SelectOptionObject
 }
 
 export default class ProfileExplorer extends React.PureComponent<Props, State> {
   public constructor(props: Props) {
     super(props)
     this.init()
+    this.selectOnToggle = this.selectOnToggle.bind(this)
+    this.selectOnSelect = this.selectOnSelect.bind(this)
   }
 
   private updateDebouncer: null | ReturnType<typeof setTimeout> = null
@@ -112,6 +115,7 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
       this.setState({
         watcher,
         profiles: [],
+        selectIsOpen: false,
       })
     } catch (err) {
       console.error(err)
@@ -145,6 +149,32 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
     }
   }
 
+  selectOnToggle(selectIsOpen: boolean) {
+    this.setState({ selectIsOpen })
+  }
+
+  selectOnSelect(
+    event: React.ChangeEvent<Element> | React.MouseEvent<Element>,
+    selection: string | SelectOptionObject,
+    isPlaceholder?: boolean | undefined
+  ) {
+    if (isPlaceholder) {
+      this.clearSelection()
+    } else {
+      this.setState({
+        selectDefaultOption: selection,
+        selectIsOpen: false,
+      })
+    }
+  }
+
+  clearSelection() {
+    this.setState({
+      selectDefaultOption: undefined,
+      selectIsOpen: false,
+    })
+  }
+
   public render() {
     if (this.state && this.state.catastrophicError) {
       return "Internal Error"
@@ -152,64 +182,81 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
       return <Loading />
     } else {
       return (
-        <Grid className="codeflare--gallery-grid flex-fill sans-serif top-pad left-pad right-pad bottom-pad" hasGutter>
-          {this.state.profiles.map((_) => (
-            <GridItem key={_.name}>
-              <Card isSelectableRaised>
-                <CardTitle>
-                  <Title headingLevel="h2" size="lg">
-                    {_.name}
-                  </Title>
-                </CardTitle>
-                <CardBody>
-                  <Flex flexWrap={{ default: "nowrap" }}>
-                    <FlexItem>
-                      <OutlinedClockIcon aria-hidden="true" />
-                    </FlexItem>
-                    <FlexItem>
-                      <span>{`Last used ${this.prettyMillis(Date.now() - _.lastUsedTime)}`}</span>
-                    </FlexItem>
-                  </Flex>
-                </CardBody>
-                <Divider />
-                <CardFooter>
-                  <Flex flexWrap={{ default: "nowrap" }}>
-                    <FlexItem>
-                      <Button variant="link">
-                        <PlayIcon aria-hidden="true" />
-                      </Button>
-                    </FlexItem>
-                    <FlexItem>
-                      <Button variant="link">
-                        <PowerOffIcon aria-hidden="true" />
-                      </Button>
-                    </FlexItem>
-                  </Flex>
-                </CardFooter>
-              </Card>
-            </GridItem>
-          ))}
+        <Flex direction={{ default: "column" }}>
+          <FlexItem>
+            <Select
+              toggleIcon={<UserIcon />}
+              variant={SelectVariant.single}
+              placeholderText="Select a profile"
+              aria-label="Profiles selector with description"
+              onToggle={this.selectOnToggle}
+              onSelect={this.selectOnSelect}
+              selections={this.state.selectedProfile}
+              isOpen={this.state.selectIsOpen}
+              aria-labelledby="select-profile-label"
+            >
+              {this.state.profiles.map((profile, index) => (
+                <SelectOption
+                  key={index}
+                  value={profile.name}
+                  description={`Last used ${this.prettyMillis(Date.now() - profile.lastUsedTime)}`}
+                />
+              ))}
+            </Select>
+          </FlexItem>
 
-          {
-            <GridItem>
-              <Card isSelectableRaised isDisabledRaised>
-                <CardTitle>
-                  <Title headingLevel="h2" size="lg">
-                    <Flex flexWrap={{ default: "nowrap" }}>
-                      <FlexItem>
-                        <UserPlusIcon aria-hidden="true" />
-                      </FlexItem>
-                      <FlexItem>
-                        <span>New Profile</span>
-                      </FlexItem>
-                    </Flex>
-                  </Title>
-                </CardTitle>
-                <CardBody>Customize a profile</CardBody>
-              </Card>
-            </GridItem>
-          }
-        </Grid>
+          <FlexItem>
+            <Card>
+              <CardTitle>
+                <Title headingLevel="h2" size="md">
+                  Status
+                </Title>
+              </CardTitle>
+              <CardBody>
+                <Flex>
+                  <FlexItem>
+                    <PendingIcon />
+                  </FlexItem>
+                  <FlexItem>Head nodes: pending</FlexItem>
+                </Flex>
+                <Flex>
+                  <FlexItem>
+                    <PendingIcon />
+                  </FlexItem>
+                  <FlexItem>Worker nodes: pending</FlexItem>
+                </Flex>
+              </CardBody>
+            </Card>
+          </FlexItem>
+
+          <FlexItem>
+            <Card>
+              <CardTitle>
+                <Title headingLevel="h2" size="md">
+                  Dashboards
+                </Title>
+              </CardTitle>
+            </Card>
+          </FlexItem>
+
+          <FlexItem>
+            <Card>
+              <CardTitle>
+                <Title headingLevel="h2" size="md">
+                  Tasks
+                </Title>
+              </CardTitle>
+              <CardBody>
+                <Button variant="primary">
+                  <PlayIcon />
+                </Button>
+                <Button variant="secondary">
+                  <PowerOffIcon />
+                </Button>
+              </CardBody>
+            </Card>
+          </FlexItem>
+        </Flex>
       )
     }
   }
