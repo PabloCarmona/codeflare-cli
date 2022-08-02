@@ -31,11 +31,18 @@ import {
   SelectOption,
   SelectVariant,
   SelectOptionObject,
+  CardFooter,
+  DescriptionList,
+  DescriptionListGroup,
+  DescriptionListTerm,
+  DescriptionListDescription,
 } from "@patternfly/react-core"
 
 import ProfileWatcher from "../tray/watchers/profile/list"
+import "../../web/scss/components/ProfileExplorer/_index.scss"
+import "../../web/scss/components/Dashboard/Description.scss"
 
-import { UserIcon, PendingIcon, PlayIcon, PowerOffIcon } from "@patternfly/react-icons"
+import { UserIcon } from "@patternfly/react-icons"
 
 const events = new EventEmitter()
 
@@ -60,6 +67,7 @@ type State = {
   catastrophicError?: unknown
   selectIsOpen: boolean
   selectDefaultOption?: string | SelectOptionObject
+  dashboardSelectIsOpen: boolean
 }
 
 export default class ProfileExplorer extends React.PureComponent<Props, State> {
@@ -68,6 +76,10 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
     this.init()
     this.selectOnToggle = this.selectOnToggle.bind(this)
     this.selectOnSelect = this.selectOnSelect.bind(this)
+    this.dashboardSelectOnToggle = this.dashboardSelectOnToggle.bind(this)
+    this.dashboardSelectOnSelect = this.dashboardSelectOnSelect.bind(this)
+    this.handleBoot = this.handleBoot.bind(this)
+    this.handleShutdown = this.handleShutdown.bind(this)
   }
 
   private updateDebouncer: null | ReturnType<typeof setTimeout> = null
@@ -175,6 +187,69 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
     })
   }
 
+  dashboardSelectOnToggle(dashboardSelectIsOpen: boolean) {
+    this.setState({ dashboardSelectIsOpen })
+  }
+
+  async dashboardSelectOnSelect(
+    event: React.ChangeEvent<Element> | React.MouseEvent<Element>,
+    selection: string | SelectOptionObject,
+    isPlaceholder?: boolean | undefined
+  ) {
+    if (isPlaceholder) {
+      this.setState({ dashboardSelectIsOpen: false })
+    } else {
+      this.openWindow(`Codeflare Run Summary - ${this.state.selectedProfile}`, "Codeflare Run Summary", [
+        "codeflare",
+        "get",
+        "run",
+        "--profile",
+        this.state.selectedProfile,
+      ])
+      this.setState({ dashboardSelectIsOpen: false })
+    }
+  }
+
+  async openWindow(title: string, initialTabTitle: string, argv: (string | undefined)[]) {
+    const { ipcRenderer } = await import("electron")
+
+    ipcRenderer.send(
+      "synchronous-message",
+      JSON.stringify({
+        operation: "new-window",
+        title,
+        initialTabTitle,
+        width: 1200,
+        height: 800,
+        argv,
+      })
+    )
+  }
+
+  handleBoot() {
+    this.openWindow(`Booting ${this.state.selectedProfile}`, "Booting", [
+      "codeflare",
+      "gui",
+      "guide",
+      "-y",
+      "--profile",
+      this.state.selectedProfile,
+      "ml/ray/start/kubernetes",
+    ])
+  }
+
+  handleShutdown() {
+    this.openWindow(`Shutting down ${this.state.selectedProfile}`, "Shutting down", [
+      "codeflare",
+      "gui",
+      "guide",
+      "-y",
+      "--profile",
+      this.state.selectedProfile,
+      "ml/ray/stop",
+    ])
+  }
+
   public render() {
     if (this.state && this.state.catastrophicError) {
       return "Internal Error"
@@ -182,7 +257,7 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
       return <Loading />
     } else {
       return (
-        <Flex direction={{ default: "column" }}>
+        <Flex className="codeflare--profile-explorer flex-fill" direction={{ default: "column" }}>
           <FlexItem>
             <Select
               toggleIcon={<UserIcon />}
@@ -208,52 +283,78 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
           <FlexItem>
             <Card>
               <CardTitle>
-                <Title headingLevel="h2" size="md">
-                  Status
-                </Title>
+                <Flex>
+                  <FlexItem flex={{ default: "flex_1" }}>
+                    <Title headingLevel="h2" size="md">
+                      {this.state.selectedProfile}
+                    </Title>
+                  </FlexItem>
+                  <FlexItem>
+                    <Title headingLevel="h2" size="md">
+                      Status: pending
+                    </Title>
+                  </FlexItem>
+                </Flex>
               </CardTitle>
               <CardBody>
+                <DescriptionList className="codeflare--profile-explorer--description">
+                  <DescriptionListGroup className="codeflare--profile-explorer--description--group">
+                    <DescriptionListTerm>Cluster Context</DescriptionListTerm>
+                    <DescriptionListDescription>
+                      api-codeflare-train-v11-codeflare-openshift-com
+                    </DescriptionListDescription>
+                  </DescriptionListGroup>
+                  <DescriptionListGroup className="codeflare--profile-explorer--description--group">
+                    <DescriptionListTerm>Cluster Namespace</DescriptionListTerm>
+                    <DescriptionListDescription>nvidia-gpu-operator</DescriptionListDescription>
+                  </DescriptionListGroup>
+                  <DescriptionListGroup className="codeflare--profile-explorer--description--group">
+                    <DescriptionListTerm>Memory per Worker</DescriptionListTerm>
+                    <DescriptionListDescription>32Gi</DescriptionListDescription>
+                  </DescriptionListGroup>
+                  <DescriptionListGroup className="codeflare--profile-explorer--description--group">
+                    <DescriptionListTerm>Worker Count</DescriptionListTerm>
+                    <DescriptionListDescription>4-4</DescriptionListDescription>
+                  </DescriptionListGroup>
+                </DescriptionList>
+              </CardBody>
+              <CardFooter>
                 <Flex>
                   <FlexItem>
-                    <PendingIcon />
+                    <Button
+                      variant="primary"
+                      className="codeflare--profile-explorer--boot-btn"
+                      onClick={this.handleBoot}
+                    >
+                      Boot
+                    </Button>
                   </FlexItem>
-                  <FlexItem>Head nodes: pending</FlexItem>
-                </Flex>
-                <Flex>
                   <FlexItem>
-                    <PendingIcon />
+                    <Button
+                      variant="secondary"
+                      className="codeflare--profile-explorer--shutdown-btn"
+                      onClick={this.handleShutdown}
+                    >
+                      Shutdown
+                    </Button>
                   </FlexItem>
-                  <FlexItem>Worker nodes: pending</FlexItem>
+                  <FlexItem>
+                    <Select
+                      variant={SelectVariant.single}
+                      placeholderText="Dashboards"
+                      aria-label="Dashboards selector"
+                      onToggle={this.dashboardSelectOnToggle}
+                      onSelect={this.dashboardSelectOnSelect}
+                      isOpen={this.state.dashboardSelectIsOpen}
+                      aria-labelledby="select-dashboard-label"
+                    >
+                      <SelectOption value="CodeFlare" />
+                      <SelectOption value="MLFlow" isPlaceholder />
+                      <SelectOption value="Tensorboard" isPlaceholder />
+                    </Select>
+                  </FlexItem>
                 </Flex>
-              </CardBody>
-            </Card>
-          </FlexItem>
-
-          <FlexItem>
-            <Card>
-              <CardTitle>
-                <Title headingLevel="h2" size="md">
-                  Dashboards
-                </Title>
-              </CardTitle>
-            </Card>
-          </FlexItem>
-
-          <FlexItem>
-            <Card>
-              <CardTitle>
-                <Title headingLevel="h2" size="md">
-                  Tasks
-                </Title>
-              </CardTitle>
-              <CardBody>
-                <Button variant="primary">
-                  <PlayIcon />
-                </Button>
-                <Button variant="secondary">
-                  <PowerOffIcon />
-                </Button>
-              </CardBody>
+              </CardFooter>
             </Card>
           </FlexItem>
         </Flex>
