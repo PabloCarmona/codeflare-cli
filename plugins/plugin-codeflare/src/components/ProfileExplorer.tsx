@@ -74,13 +74,14 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
   public constructor(props: Props) {
     super(props)
     this.init()
-    this.selectOnToggle = this.selectOnToggle.bind(this)
-    this.selectOnSelect = this.selectOnSelect.bind(this)
-    this.dashboardSelectOnToggle = this.dashboardSelectOnToggle.bind(this)
-    this.dashboardSelectOnSelect = this.dashboardSelectOnSelect.bind(this)
-    this.handleBoot = this.handleBoot.bind(this)
-    this.handleShutdown = this.handleShutdown.bind(this)
   }
+
+  private readonly _selectOnToggle = this.selectOnToggle.bind(this)
+  private readonly _selectOnSelect = this.selectOnSelect.bind(this)
+  private readonly _dashboardSelectOnToggle = this.dashboardSelectOnToggle.bind(this)
+  private readonly _dashboardSelectOnSelect = this.dashboardSelectOnSelect.bind(this)
+  private readonly _handleBoot = this.handleBoot.bind(this)
+  private readonly _handleShutdown = this.handleShutdown.bind(this)
 
   private updateDebouncer: null | ReturnType<typeof setTimeout> = null
 
@@ -161,11 +162,11 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
     }
   }
 
-  selectOnToggle(selectIsOpen: boolean) {
+  private selectOnToggle(selectIsOpen: boolean) {
     this.setState({ selectIsOpen })
   }
 
-  selectOnSelect(
+  private selectOnSelect(
     event: React.ChangeEvent<Element> | React.MouseEvent<Element>,
     selection: string | SelectOptionObject,
     isPlaceholder?: boolean | undefined
@@ -180,18 +181,18 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
     }
   }
 
-  clearSelection() {
+  private clearSelection() {
     this.setState({
       selectDefaultOption: undefined,
       selectIsOpen: false,
     })
   }
 
-  dashboardSelectOnToggle(dashboardSelectIsOpen: boolean) {
+  private dashboardSelectOnToggle(dashboardSelectIsOpen: boolean) {
     this.setState({ dashboardSelectIsOpen })
   }
 
-  async dashboardSelectOnSelect(
+  private async dashboardSelectOnSelect(
     event: React.ChangeEvent<Element> | React.MouseEvent<Element>,
     selection: string | SelectOptionObject,
     isPlaceholder?: boolean | undefined
@@ -226,7 +227,7 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
     )
   }
 
-  handleBoot() {
+  private handleBoot() {
     this.openWindow(`Booting ${this.state.selectedProfile}`, "Booting", [
       "codeflare",
       "gui",
@@ -238,7 +239,7 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
     ])
   }
 
-  handleShutdown() {
+  private handleShutdown() {
     this.openWindow(`Shutting down ${this.state.selectedProfile}`, "Shutting down", [
       "codeflare",
       "gui",
@@ -264,8 +265,8 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
               variant={SelectVariant.single}
               placeholderText="Select a profile"
               aria-label="Profiles selector with description"
-              onToggle={this.selectOnToggle}
-              onSelect={this.selectOnSelect}
+              onToggle={this._selectOnToggle}
+              onSelect={this._selectOnSelect}
               selections={this.state.selectedProfile}
               isOpen={this.state.selectIsOpen}
               aria-labelledby="select-profile-label"
@@ -324,7 +325,7 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
                     <Button
                       variant="primary"
                       className="codeflare--profile-explorer--boot-btn"
-                      onClick={this.handleBoot}
+                      onClick={this._handleBoot}
                     >
                       Boot
                     </Button>
@@ -333,7 +334,7 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
                     <Button
                       variant="secondary"
                       className="codeflare--profile-explorer--shutdown-btn"
-                      onClick={this.handleShutdown}
+                      onClick={this._handleShutdown}
                     >
                       Shutdown
                     </Button>
@@ -343,8 +344,8 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
                       variant={SelectVariant.single}
                       placeholderText="Dashboards"
                       aria-label="Dashboards selector"
-                      onToggle={this.dashboardSelectOnToggle}
-                      onSelect={this.dashboardSelectOnSelect}
+                      onToggle={this._dashboardSelectOnToggle}
+                      onSelect={this._dashboardSelectOnSelect}
                       isOpen={this.state.dashboardSelectIsOpen}
                       aria-labelledby="select-dashboard-label"
                     >
