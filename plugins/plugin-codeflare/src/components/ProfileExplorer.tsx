@@ -60,7 +60,6 @@ type State = {
   selectedProfile?: string
   profiles?: Profiles.Profile[]
   catastrophicError?: unknown
-  dashboardSelectIsOpen: boolean
 }
 
 export default class ProfileExplorer extends React.PureComponent<Props, State> {
