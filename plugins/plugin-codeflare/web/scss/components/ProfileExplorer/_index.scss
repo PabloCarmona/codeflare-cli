@@ -18,4 +18,8 @@
   &--boot-btn {
     color: var(--color-base00) !important;
   }
+  .pf-c-description-list__text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }

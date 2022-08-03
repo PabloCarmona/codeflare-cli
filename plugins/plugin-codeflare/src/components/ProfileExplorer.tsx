@@ -32,12 +32,14 @@ import {
   DescriptionListTerm,
   DescriptionListDescription,
 } from "@patternfly/react-core"
+
 import ProfileSelect from "./ProfileSelect"
 import DashboardSelect from "./DashboardSelect"
 import ProfileWatcher from "../tray/watchers/profile/list"
+import { handleBoot, handleShutdown } from "../controller/profile/actions"
+
 import "../../web/scss/components/Dashboard/Description.scss"
 import "../../web/scss/components/ProfileExplorer/_index.scss"
-import { handleBoot, handleShutdown } from "../controller/profile/actions"
 
 const events = new EventEmitter()
 
@@ -142,7 +144,7 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
           </FlexItem>
 
           <FlexItem>
-            <Card>
+            <Card className="top-pad left-pad right-pad bottompad">
               <CardTitle>
                 <Flex>
                   <FlexItem flex={{ default: "flex_1" }}>
