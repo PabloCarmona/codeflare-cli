@@ -15,7 +15,6 @@
  */
 
 import React from "react"
-import prettyMillis from "pretty-ms"
 import { EventEmitter } from "events"
 import { Profiles } from "madwizard"
 import { Loading } from "@kui-shell/plugin-client-common"
@@ -42,7 +41,9 @@ import ProfileWatcher from "../tray/watchers/profile/list"
 import "../../web/scss/components/ProfileExplorer/_index.scss"
 import "../../web/scss/components/Dashboard/Description.scss"
 
-import { UserIcon } from "@patternfly/react-icons"
+import { openWindow, handleBoot, handleShutdown } from "../controller/profile/actions"
+
+import ProfileSelect from "./ProfileSelect"
 
 const events = new EventEmitter()
 
@@ -65,8 +66,6 @@ type State = {
   selectedProfile?: string
   profiles?: Profiles.Profile[]
   catastrophicError?: unknown
-  selectIsOpen: boolean
-  selectDefaultOption?: string | SelectOptionObject
   dashboardSelectIsOpen: boolean
 }
 
@@ -76,12 +75,10 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
     this.init()
   }
 
-  private readonly _selectOnToggle = this.selectOnToggle.bind(this)
-  private readonly _selectOnSelect = this.selectOnSelect.bind(this)
   private readonly _dashboardSelectOnToggle = this.dashboardSelectOnToggle.bind(this)
   private readonly _dashboardSelectOnSelect = this.dashboardSelectOnSelect.bind(this)
-  private readonly _handleBoot = this.handleBoot.bind(this)
-  private readonly _handleShutdown = this.handleShutdown.bind(this)
+  private readonly _handleBoot = handleBoot.bind(this)
+  private readonly _handleShutdown = handleShutdown.bind(this)
 
   private updateDebouncer: null | ReturnType<typeof setTimeout> = null
 
@@ -128,7 +125,6 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
       this.setState({
         watcher,
         profiles: [],
-        selectIsOpen: false,
       })
     } catch (err) {
       console.error(err)
@@ -142,65 +138,19 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
     }
   }
 
-  /** User has clicked to select a profile */
-  private readonly onSelect = async (evt: React.MouseEvent<HTMLElement>) => {
-    const selectedProfile = evt.currentTarget.getAttribute("data-profile")
-    evt.currentTarget.scrollIntoView(true)
-    if (selectedProfile && selectedProfile !== this.state.selectedProfile) {
-      if (await Profiles.bumpLastUsedTime(selectedProfile)) {
-        emitSelectProfile(selectedProfile)
-        this.setState({ selectedProfile })
-      }
-    }
-  }
-
-  private prettyMillis(duration: number) {
-    if (duration < 1000) {
-      return "just now"
-    } else {
-      return prettyMillis(duration, { compact: true }) + " ago"
-    }
-  }
-
-  private selectOnToggle(selectIsOpen: boolean) {
-    this.setState({ selectIsOpen })
-  }
-
-  private selectOnSelect(
-    event: React.ChangeEvent<Element> | React.MouseEvent<Element>,
-    selection: string | SelectOptionObject,
-    isPlaceholder?: boolean | undefined
-  ) {
-    if (isPlaceholder) {
-      this.clearSelection()
-    } else {
-      this.setState({
-        selectDefaultOption: selection,
-        selectIsOpen: false,
-      })
-    }
-  }
-
-  private clearSelection() {
-    this.setState({
-      selectDefaultOption: undefined,
-      selectIsOpen: false,
-    })
-  }
-
-  private dashboardSelectOnToggle(dashboardSelectIsOpen: boolean) {
+  dashboardSelectOnToggle(dashboardSelectIsOpen: boolean) {
     this.setState({ dashboardSelectIsOpen })
   }
 
-  private async dashboardSelectOnSelect(
+  async dashboardSelectOnSelect(
     event: React.ChangeEvent<Element> | React.MouseEvent<Element>,
     selection: string | SelectOptionObject,
-    isPlaceholder?: boolean | undefined
+    isPlaceholder: boolean | undefined
   ) {
     if (isPlaceholder) {
       this.setState({ dashboardSelectIsOpen: false })
     } else {
-      this.openWindow(`Codeflare Run Summary - ${this.state.selectedProfile}`, "Codeflare Run Summary", [
+      openWindow(`Codeflare Run Summary - ${this.state.selectedProfile}`, "Codeflare Run Summary", [
         "codeflare",
         "get",
         "run",
@@ -209,46 +159,6 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
       ])
       this.setState({ dashboardSelectIsOpen: false })
     }
-  }
-
-  async openWindow(title: string, initialTabTitle: string, argv: (string | undefined)[]) {
-    const { ipcRenderer } = await import("electron")
-
-    ipcRenderer.send(
-      "synchronous-message",
-      JSON.stringify({
-        operation: "new-window",
-        title,
-        initialTabTitle,
-        width: 1200,
-        height: 800,
-        argv,
-      })
-    )
-  }
-
-  private handleBoot() {
-    this.openWindow(`Booting ${this.state.selectedProfile}`, "Booting", [
-      "codeflare",
-      "gui",
-      "guide",
-      "-y",
-      "--profile",
-      this.state.selectedProfile,
-      "ml/ray/start/kubernetes",
-    ])
-  }
-
-  private handleShutdown() {
-    this.openWindow(`Shutting down ${this.state.selectedProfile}`, "Shutting down", [
-      "codeflare",
-      "gui",
-      "guide",
-      "-y",
-      "--profile",
-      this.state.selectedProfile,
-      "ml/ray/stop",
-    ])
   }
 
   public render() {
@@ -260,25 +170,7 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
       return (
         <Flex className="codeflare--profile-explorer flex-fill" direction={{ default: "column" }}>
           <FlexItem>
-            <Select
-              toggleIcon={<UserIcon />}
-              variant={SelectVariant.single}
-              placeholderText="Select a profile"
-              aria-label="Profiles selector with description"
-              onToggle={this._selectOnToggle}
-              onSelect={this._selectOnSelect}
-              selections={this.state.selectedProfile}
-              isOpen={this.state.selectIsOpen}
-              aria-labelledby="select-profile-label"
-            >
-              {this.state.profiles.map((profile, index) => (
-                <SelectOption
-                  key={index}
-                  value={profile.name}
-                  description={`Last used ${this.prettyMillis(Date.now() - profile.lastUsedTime)}`}
-                />
-              ))}
-            </Select>
+            <ProfileSelect selectedProfile={this.state.selectedProfile} profiles={this.state.profiles} />
           </FlexItem>
 
           <FlexItem>
@@ -325,7 +217,7 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
                     <Button
                       variant="primary"
                       className="codeflare--profile-explorer--boot-btn"
-                      onClick={this._handleBoot}
+                      onClick={() => this._handleBoot(this.state.selectedProfile)}
                     >
                       Boot
                     </Button>
@@ -334,7 +226,7 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
                     <Button
                       variant="secondary"
                       className="codeflare--profile-explorer--shutdown-btn"
-                      onClick={this._handleShutdown}
+                      onClick={() => this._handleShutdown(this.state.selectedProfile)}
                     >
                       Shutdown
                     </Button>
