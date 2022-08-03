@@ -26,24 +26,18 @@ import {
   Button,
   Flex,
   FlexItem,
-  Select,
-  SelectOption,
-  SelectVariant,
-  SelectOptionObject,
   CardFooter,
   DescriptionList,
   DescriptionListGroup,
   DescriptionListTerm,
   DescriptionListDescription,
 } from "@patternfly/react-core"
-
-import ProfileWatcher from "../tray/watchers/profile/list"
-import "../../web/scss/components/ProfileExplorer/_index.scss"
-import "../../web/scss/components/Dashboard/Description.scss"
-
-import { openWindow, handleBoot, handleShutdown } from "../controller/profile/actions"
-
 import ProfileSelect from "./ProfileSelect"
+import DashboardSelect from "./DashboardSelect"
+import ProfileWatcher from "../tray/watchers/profile/list"
+import "../../web/scss/components/Dashboard/Description.scss"
+import "../../web/scss/components/ProfileExplorer/_index.scss"
+import { handleBoot, handleShutdown } from "../controller/profile/actions"
 
 const events = new EventEmitter()
 
@@ -75,8 +69,6 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
     this.init()
   }
 
-  private readonly _dashboardSelectOnToggle = this.dashboardSelectOnToggle.bind(this)
-  private readonly _dashboardSelectOnSelect = this.dashboardSelectOnSelect.bind(this)
   private readonly _handleBoot = handleBoot.bind(this)
   private readonly _handleShutdown = handleShutdown.bind(this)
 
@@ -138,29 +130,6 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
     }
   }
 
-  dashboardSelectOnToggle(dashboardSelectIsOpen: boolean) {
-    this.setState({ dashboardSelectIsOpen })
-  }
-
-  async dashboardSelectOnSelect(
-    event: React.ChangeEvent<Element> | React.MouseEvent<Element>,
-    selection: string | SelectOptionObject,
-    isPlaceholder: boolean | undefined
-  ) {
-    if (isPlaceholder) {
-      this.setState({ dashboardSelectIsOpen: false })
-    } else {
-      openWindow(`Codeflare Run Summary - ${this.state.selectedProfile}`, "Codeflare Run Summary", [
-        "codeflare",
-        "get",
-        "run",
-        "--profile",
-        this.state.selectedProfile,
-      ])
-      this.setState({ dashboardSelectIsOpen: false })
-    }
-  }
-
   public render() {
     if (this.state && this.state.catastrophicError) {
       return "Internal Error"
@@ -190,6 +159,7 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
                 </Flex>
               </CardTitle>
               <CardBody>
+                {/* TODO: Retrieve real data and abstract to its own component */}
                 <DescriptionList className="codeflare--profile-explorer--description">
                   <DescriptionListGroup className="codeflare--profile-explorer--description--group">
                     <DescriptionListTerm>Cluster Context</DescriptionListTerm>
@@ -232,19 +202,7 @@ export default class ProfileExplorer extends React.PureComponent<Props, State> {
                     </Button>
                   </FlexItem>
                   <FlexItem>
-                    <Select
-                      variant={SelectVariant.single}
-                      placeholderText="Dashboards"
-                      aria-label="Dashboards selector"
-                      onToggle={this._dashboardSelectOnToggle}
-                      onSelect={this._dashboardSelectOnSelect}
-                      isOpen={this.state.dashboardSelectIsOpen}
-                      aria-labelledby="select-dashboard-label"
-                    >
-                      <SelectOption value="CodeFlare" />
-                      <SelectOption value="MLFlow" isPlaceholder />
-                      <SelectOption value="Tensorboard" isPlaceholder />
-                    </Select>
+                    <DashboardSelect selectedProfile={this.state.selectedProfile} />
                   </FlexItem>
                 </Flex>
               </CardFooter>
